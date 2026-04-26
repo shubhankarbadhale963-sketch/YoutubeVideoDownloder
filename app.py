@@ -63,7 +63,7 @@ def extract_formats(info):
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return "API is running"
 
 
 @app.route("/info", methods=["POST"])
