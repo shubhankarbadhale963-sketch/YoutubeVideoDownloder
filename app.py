@@ -116,11 +116,6 @@ def download():
             ydl_opts = {
                 "format": format_id,
                 "outtmpl": output_template,
-                "postprocessors": [{
-                    "key": "FFmpegExtractAudio",
-                    "preferredcodec": "mp3",
-                    "preferredquality": "192",
-                }],
             }
         else:
             ydl_opts = {
