@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file
 from flask_cors import CORS
 import yt_dlp
 import os
@@ -12,7 +12,12 @@ DOWNLOAD_FOLDER = os.path.join(BASE_DIR, "downloads")
 os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
 
+# -------------------------------
+# Helpers
+# -------------------------------
+
 def format_size(size):
+    """Convert bytes to readable size"""
     if not size:
         return "Unknown"
     for unit in ["B", "KB", "MB", "GB"]:
@@ -23,10 +28,12 @@ def format_size(size):
 
 
 def extract_formats(info):
+    """Extract clean video/audio options"""
     videos = []
     audios = []
 
     for f in info.get("formats", []):
+        # VIDEO FORMATS
         if f.get("vcodec") != "none" and f.get("acodec") == "none":
             videos.append({
                 "format_id": f.get("format_id"),
@@ -36,6 +43,7 @@ def extract_formats(info):
                 "fps": f.get("fps"),
             })
 
+        # AUDIO FORMATS
         if f.get("acodec") != "none" and f.get("vcodec") == "none":
             audios.append({
                 "format_id": f.get("format_id"),
@@ -46,25 +54,34 @@ def extract_formats(info):
 
     videos = sorted(videos, key=lambda x: x["resolution"] or 0, reverse=True)
     audios = sorted(audios, key=lambda x: x["abr"] or 0, reverse=True)
-
     return videos, audios
 
 
+# -------------------------------
+# Routes
+# -------------------------------
+
 @app.route("/")
 def home():
-    return "API is running"
+    return render_template("index.html")
 
 
 @app.route("/info", methods=["POST"])
 def get_info():
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         url = data.get("url")
-
         if not url:
-            return jsonify({"error": "No URL"}), 400
+            return jsonify({"error": "Missing URL"}), 400
 
-        with yt_dlp.YoutubeDL({"quiet": True}) as ydl:
+        ydl_opts = {
+            "quiet": True,
+            "skip_download": True,
+            "noplaylist": True,
+            "extract_flat": False,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
         videos, audios = extract_formats(info)
@@ -72,6 +89,7 @@ def get_info():
         return jsonify({
             "title": info.get("title"),
             "thumbnail": info.get("thumbnail"),
+            "duration": info.get("duration"),
             "videos": videos[:8],
             "audios": audios[:6],
         })
@@ -83,28 +101,32 @@ def get_info():
 @app.route("/download", methods=["POST"])
 def download():
     try:
-        data = request.get_json()
-        url = data["url"]
-        format_id = data["format_id"]
-        media_type = data["type"]
+        data = request.get_json(silent=True) or {}
+        url = data.get("url")
+        format_id = data.get("format_id")
+        media_type = data.get("type")
 
-        uid = str(uuid.uuid4())
-        output = os.path.join(DOWNLOAD_FOLDER, f"{uid}.%(ext)s")
+        if not url or not format_id or media_type not in ("audio", "video"):
+            return jsonify({"error": "Invalid request payload"}), 400
+
+        unique_id = str(uuid.uuid4())
+        output_template = os.path.join(DOWNLOAD_FOLDER, f"{unique_id}.%(ext)s")
 
         if media_type == "audio":
             ydl_opts = {
                 "format": format_id,
-                "outtmpl": output,
+                "outtmpl": output_template,
                 "postprocessors": [{
                     "key": "FFmpegExtractAudio",
                     "preferredcodec": "mp3",
+                    "preferredquality": "192",
                 }],
             }
         else:
             ydl_opts = {
                 "format": f"{format_id}+bestaudio/best",
                 "merge_output_format": "mp4",
-                "outtmpl": output,
+                "outtmpl": output_template,
             }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -124,10 +146,19 @@ def download():
 
 @app.route("/file")
 def serve_file():
-    name = request.args.get("path")
-    path = os.path.join(DOWNLOAD_FOLDER, os.path.basename(name))
-    return send_file(path, as_attachment=True)
+    file_name = request.args.get("path", "")
+    if not file_name:
+        return jsonify({"error": "Missing file path"}), 400
+
+    safe_name = os.path.basename(file_name)
+    safe_path = os.path.join(DOWNLOAD_FOLDER, safe_name)
+
+    if not os.path.exists(safe_path):
+        return jsonify({"error": "File not found"}), 404
+
+    return send_file(safe_path, as_attachment=True)
 
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
