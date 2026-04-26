@@ -1,3 +1,4 @@
+const BASE_URL = "https://yt-backend-sz4a.onrender.com";
 /* ===========================
    GLOBAL STATE
 =========================== */
@@ -38,7 +39,7 @@ async function fetchInfo() {
 
     try {
 
-        const res = await fetch("/info", {
+        const res = await fetch(BASE_URL + "/info", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ url })
@@ -198,7 +199,7 @@ async function startDownload(format_id, type){
 
     try {
 
-        const res = await fetch("/download", {
+        const res = await fetch(BASE_URL + "/download", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
@@ -216,7 +217,7 @@ async function startDownload(format_id, type){
 
         setTimeout(() => {
             window.location =
-                "/file?path=" + encodeURIComponent(data.file);
+                BASE_URL + "/file?path=" + encodeURIComponent(data.file);
         }, 800);
 
     } catch(err){
