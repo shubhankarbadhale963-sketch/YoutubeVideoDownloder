@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>YouTube Downloader</title>
+
+<link rel="stylesheet" href="/static/style.css">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- ================= HERO ================= -->
+    <div class="hero">
+
+        <h1 class="logo">⚡ YouTube Downloader</h1>
+        <p class="tagline">Fast • Clean • High Quality</p>
+
+        <div class="search-box">
+            <input id="urlInput"
+                   placeholder="Paste YouTube URL here..." />
+            <button onclick="fetchInfo()">Start ↓</button>
+        </div>
+
+        <p class="hint">Paste link to load available qualities</p>
+
+    </div>
+
+
+    <!-- ================= LOADING ================= -->
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Fetching video info...</p>
+    </div>
+
+
+    <!-- ================= CONTENT ================= -->
+    <div id="content" class="content hidden">
+
+        <!-- VIDEO PREVIEW -->
+        <div class="preview">
+
+            <img id="thumbnail" src="" />
+
+            <h2 id="title"></h2>
+
+        </div>
+
+
+        <!-- OPTIONS PANEL -->
+        <div class="options">
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('video')">🎬 Video</button>
+                <button class="tab" onclick="switchTab('audio')">🎵 Audio</button>
+            </div>
+
+
+            <!-- VIDEO LIST -->
+            <div id="videoList" class="list"></div>
+
+            <!-- AUDIO LIST -->
+            <div id="audioList" class="list hidden"></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= PROGRESS ================= -->
+    <div id="progressSection" class="progress-section hidden">
+
+        <div class="progress-bar">
+            <div id="progressFill"></div>
+        </div>
+
+        <p id="statusText">Preparing...</p>
+
+    </div>
+
+</div>
+
+
+<script src="/static/script.js"></script>
+
+</body>
+</html>
